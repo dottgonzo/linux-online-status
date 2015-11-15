@@ -1,0 +1,37 @@
+{
+  "name": "linux-online-status",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha",
+    "hw": "git add -A && git commit -m 'oki'&&npm version patch -m patch&&git add -A && git commit --amend -C HEAD&& git push&&npm publish",
+    "patch": "npm version patch -m patch&&git add -A && git commit --amend -C HEAD&& git push&&npm publish",
+    "prepublish": "npm test"
+    },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dottgonzo/linux-online-status.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dottgonzo/linux-online-status/issues"
+  },
+  "dependencies": {
+    "diskinfo": "0.0.3",
+    "exec-sync": "^0.1.6",
+    "external-ip": "^0.2.4",
+    "linux-audio-state": "0.0.4",
+    "linux-video-state": "0.0.5",
+    "lsusbdev": "0.0.3",
+    "netw": "0.0.2",
+    "path-exists": "^2.1.0",
+    "promise": "^7.0.4",
+    "request-promise-json": "^1.0.4",
+    "verbo": "0.0.9"
+  },
+  "devDependencies": {
+    "chai": "^3.4.1"
+  }
+}
