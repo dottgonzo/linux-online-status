@@ -26,7 +26,6 @@
     "linux-video-state": "0.0.5",
     "lsusbdev": "0.0.3",
     "netw": "0.0.2",
-    "path-exists": "^2.1.0",
     "promise": "^7.0.4",
     "request-promise-json": "^1.0.4",
     "verbo": "0.0.9"

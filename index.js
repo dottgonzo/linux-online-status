@@ -2,7 +2,6 @@ var netw=require('netw'),
 las=require('linux-audio-state'),
 getIP = require('external-ip')(),
 Promise=require('promise'),
-pathExists=require('path-exists'),
 diskinfo = require('diskinfo'),
 exec=require('exec-sync');
 lsusb=require('lsusbdev'),
@@ -12,10 +11,6 @@ module.exports=function(){
   return new Promise(function (resolve, reject) {
 
   var j={bootId:exec('cat /proc/sys/kernel/random/boot_id')};
-
-  if(pathExists.sync('./config.json')){
-  j.config=require('./config.json')
-    }
 
     lsusb().then(function(data){
       j.usbDevices=data
