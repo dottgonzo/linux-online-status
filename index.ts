@@ -145,10 +145,17 @@ export = function() {
                                     object.video.inputs = data;
                                     resolve(object);
                                 }).catch(function(err) {
-                                    reject(err);
+                                    console.log(err);
+                                    resolve(object);
                                 });
                             }).catch(function(err) {
-                                reject(err);
+                                lvs().then(function(data) {
+                                    object.video.inputs = data;
+                                    resolve(object);
+                                }).catch(function(err) {
+                                    console.log(err);
+                                    resolve(object);
+                                });
                             });
 
 
