@@ -1,13 +1,13 @@
 {
   "name": "linux-online-status",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "mocha",
     "hw": "git add -A && git commit -m 'oki'&&npm version patch -m patch&&git add -A && git commit --amend -C HEAD&& git push&&npm publish",
     "patch": "npm version patch -m patch&&git add -A && git commit --amend -C HEAD&& git push&&npm publish",
-    "prepublish": "#npm test"
+    "prepublish": "npm test"
   },
   "repository": {
     "type": "git",
