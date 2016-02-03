@@ -1,6 +1,6 @@
 {
   "name": "linux-online-status",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -22,7 +22,7 @@
     "bluebird": "^3.2.1",
     "diskinfo": "0.0.3",
     "linux-audio-state": "0.0.11",
-    "linux-video-state": "0.0.10",
+    "linux-video-state": "0.0.11",
     "lsusbdev": "0.0.9",
     "netw": "0.0.58",
     "verbo": "0.0.9"
