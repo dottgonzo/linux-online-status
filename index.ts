@@ -84,6 +84,7 @@ interface GetDrivesAnswer {
 
 interface Answer {
     bootId: string;
+    updatedAt: number;
     usbDevices: LsusbdevAnswer[];
     drives: GetDrivesAnswer[];
     networks: NetworkAnswer[];
@@ -100,6 +101,7 @@ export = function() {
 
 
         let object = <Answer>{};
+        object.updatedAt = new Date().getTime();
         object.audio = <{ inputs: AudioAnswer[] }>{};
         object.video = <{ inputs: VideoAnswer[] }>{};
         let callbacked = false;
@@ -160,12 +162,6 @@ export = function() {
             }
 
         });
-
-
-
-
-
-
 
 
     });
