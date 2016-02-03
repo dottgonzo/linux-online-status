@@ -1,6 +1,6 @@
 {
   "name": "linux-online-status",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -25,7 +25,6 @@
     "linux-video-state": "0.0.9",
     "lsusbdev": "0.0.9",
     "netw": "0.0.58",
-    "request-promise-json": "^1.0.4",
     "verbo": "0.0.9"
   },
   "devDependencies": {
