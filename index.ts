@@ -136,7 +136,7 @@ export = function() {
         }, 10000);
 
 
-                object.bootId = stdout.toString("utf-8");
+                object.bootId = stdout.toString("utf-8").replace("\n", "");
 
                 exec("cat /proc/stat | grep btime | awk '{ print $2 }'", { timeout: 9000 }, function(error, stdout, stderr) {
                     if (error != null) {
