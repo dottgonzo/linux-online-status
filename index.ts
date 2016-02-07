@@ -84,6 +84,7 @@ interface GetDrivesAnswer {
 
 interface Answer {
     bootId: string;
+    bootTime: number;
     updatedAt: number;
     usbDevices: LsusbdevAnswer[];
     drives: GetDrivesAnswer[];
@@ -107,7 +108,7 @@ export = function() {
         let callbacked = false;
         let timo = setTimeout(function() {
             if (!callbacked) {
-                console.log("timeout bootId read");
+                console.log("timeout bootId read timeout");
                 reject("timeout");
             }
         }, 10000);
@@ -126,46 +127,70 @@ export = function() {
                 callbacked = true;
                 clearTimeout(timo);
 
+        let callbacked2 = false;
+        let timo2 = setTimeout(function() {
+            if (!callbacked2) {
+                console.log("timeout bootTime read timeout");
+                reject("timeout");
+            }
+        }, 10000);
+
 
                 object.bootId = stdout.toString("utf-8");
 
+                exec("cat /proc/stat | grep btime | awk '{ print $2 }'", { timeout: 9000 }, function(error, stdout, stderr) {
+                    if (error != null) {
+                        callbacked2 = true;
+                        clearTimeout(timo2);
+                        reject(error);
+                    } else if (stderr && stderr != null) {
+                        callbacked2 = true;
+                        clearTimeout(timo2);
+                        reject(stderr);
+                    } else {
+                        callbacked2 = true;
+                        clearTimeout(timo2);
 
-                lsusb().then(function(data) {
-                    object.usbDevices = data;
+                        object.bootTime = parseInt(stdout.toString("utf-8")) * 1000;
 
-                    diskinfo.getDrives(function(err, aDrives: GetDrivesAnswer[]) {
-                        object.drives = aDrives;
 
-                        netw().then(function(data: NetworkAnswer[]) {
-                            object.networks = data;
+                        lsusb().then(function(data) {
+                            object.usbDevices = data;
 
-                            las().then(function(data) {
-                                object.audio.inputs = data;
-                                lvs().then(function(data) {
-                                    object.video.inputs = data;
-                                    resolve(object);
-                                }).catch(function(err) {
-                                    console.log(err);
-                                    resolve(object);
+                            diskinfo.getDrives(function(err, aDrives: GetDrivesAnswer[]) {
+                                object.drives = aDrives;
+
+                                netw().then(function(data: NetworkAnswer[]) {
+                                    object.networks = data;
+
+                                    las().then(function(data) {
+                                        object.audio.inputs = data;
+                                        lvs().then(function(data) {
+                                            object.video.inputs = data;
+                                            resolve(object);
+                                        }).catch(function(err) {
+                                            console.log(err);
+                                            resolve(object);
+                                        });
+                                    }).catch(function(err) {
+                                        lvs().then(function(data) {
+                                            object.video.inputs = data;
+                                            resolve(object);
+                                        }).catch(function(err) {
+                                            console.log(err);
+                                            resolve(object);
+                                        });
+                                    });
+
+
                                 });
-                            }).catch(function(err) {
-                                lvs().then(function(data) {
-                                    object.video.inputs = data;
-                                    resolve(object);
-                                }).catch(function(err) {
-                                    console.log(err);
-                                    resolve(object);
-                                });
+
                             });
-
 
                         });
 
-                    });
-
+                    }
                 });
-
-
             }
 
         });
