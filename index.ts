@@ -6,7 +6,7 @@ import las = require("linux-audio-state");
 import lsusb = require("lsusbdev");
 import lvs = require("linux-video-state");
 
-let netw = require("netw");
+import netw from "netw"
 
 let diskinfo = require("diskinfo");
 
@@ -181,20 +181,12 @@ export = function() {
                                             resolve(object);
                                         });
                                     });
-
-
                                 });
-
                             });
-
                         });
-
                     }
                 });
             }
-
         });
-
     });
-
 };
