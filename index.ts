@@ -165,7 +165,7 @@ export default function sysinfo() {
                 }, 10000);
 
 
-                object.bootId = stdout.toString("utf-8").replace("\n", "");
+                object.bootId = stdout.toString().replace("\n", "");
 
                 exec("cat /proc/stat | grep btime | awk '{ print $2 }'", { timeout: 9000 }, function (error, stdout, stderr) {
                     if (error != null) {
@@ -180,7 +180,7 @@ export default function sysinfo() {
                         callbacked2 = true;
                         clearTimeout(timo2);
 
-                        object.bootTime = parseInt(stdout.toString("utf-8")) * 1000;
+                        object.bootTime = parseInt(stdout.toString()) * 1000;
 
 
                         lsusb().then(function (data) {
