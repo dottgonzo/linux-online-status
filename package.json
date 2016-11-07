@@ -20,12 +20,12 @@
   },
   "dependencies": {
     "bluebird": "^3.2.1",
-    "diskinfo": "0.0.3",
-    "linux-audio-state": "0.0.11",
-    "linux-video-state": "0.0.11",
-    "lsusbdev": "0.0.9",
-    "netw": "0.0.64",
-    "verbo": "0.0.9"
+    "debcheck": "0.0.3",
+    "linux-audio-state": "0.0.12",
+    "linux-video-state": "0.0.12",
+    "ls-disks": "^1.3.1",
+    "lsusbdev": "^1.0.1",
+    "networkstatus": "0.0.1"
   },
   "devDependencies": {
     "chai": "^3.5.0",
