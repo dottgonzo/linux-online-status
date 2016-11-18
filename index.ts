@@ -6,6 +6,9 @@ import las from "linux-audio-state";
 import lsusb from "lsusbdev";
 import lvs from "linux-video-state";
 
+import tempcpus from "linux-cpu-temp";
+
+
 import networkstatus from "networkstatus"
 
 import debCheck from "debcheck"
@@ -13,6 +16,29 @@ import debCheck from "debcheck"
 import * as lsdisks from "ls-disks";
 
 const exec = child_process.exec;
+
+
+
+
+interface Icores {
+
+    temp: number;
+    unit: string
+    corenumber: number;
+    version: string;
+}
+
+
+interface Itemp {
+
+    temperature: number;
+    unit: string;
+    max: number;
+    min: number;
+    cores: Icores[];
+
+}
+
 
 
 interface AudioChannelAnswer {
@@ -124,7 +150,14 @@ interface Answer {
     audio: {
         inputs: AudioAnswer[];
     };
+    cputemp: Itemp
 }
+
+
+
+
+
+
 
 export default function sysinfo() {
     return new Promise<Answer>(function (resolve, reject) {
@@ -195,25 +228,55 @@ export default function sysinfo() {
                                             if (a) {
                                                 lvs().then(function (data) {
                                                     object.video.inputs = data;
-                                                    resolve(object);
+                                                    tempcpus().then((a) => {
+                                                        object.cputemp = a
+                                                        resolve(object)
+                                                    }).catch((err) => {
+                                                        resolve(object)
+                                                    })
                                                 }).catch(function (err) {
                                                     console.log(err);
-                                                    resolve(object);
+                                                    tempcpus().then((a) => {
+                                                        object.cputemp = a
+                                                        resolve(object)
+                                                    }).catch((err) => {
+                                                        resolve(object)
+                                                    })
                                                 });
                                             } else {
                                                 debCheck('pulseaudio-utils').then((a) => {
                                                     if (a) {
                                                         las().then(function (data) {
                                                             object.audio.inputs = data
-                                                            resolve(object)
+                                                            tempcpus().then((a) => {
+                                                                object.cputemp = a
+                                                                resolve(object)
+                                                            }).catch((err) => {
+                                                                resolve(object)
+                                                            })
                                                         }).catch(function (err) {
-                                                            resolve(object)
+                                                            tempcpus().then((a) => {
+                                                                object.cputemp = a
+                                                                resolve(object)
+                                                            }).catch((err) => {
+                                                                resolve(object)
+                                                            })
                                                         });
                                                     } else {
-                                                        resolve(object)
+                                                        tempcpus().then((a) => {
+                                                            object.cputemp = a
+                                                            resolve(object)
+                                                        }).catch((err) => {
+                                                            resolve(object)
+                                                        })
                                                     }
                                                 }).catch((err) => {
-                                                    resolve(object)
+                                                    tempcpus().then((a) => {
+                                                        object.cputemp = a
+                                                        resolve(object)
+                                                    }).catch((err) => {
+                                                        resolve(object)
+                                                    })
                                                 })
                                             }
                                         }).catch((err) => {
@@ -221,15 +284,35 @@ export default function sysinfo() {
                                                 if (a) {
                                                     las().then(function (data) {
                                                         object.audio.inputs = data
-                                                        resolve(object)
+                                                        tempcpus().then((a) => {
+                                                            object.cputemp = a
+                                                            resolve(object)
+                                                        }).catch((err) => {
+                                                            resolve(object)
+                                                        })
                                                     }).catch(function (err) {
-                                                        resolve(object)
+                                                        tempcpus().then((a) => {
+                                                            object.cputemp = a
+                                                            resolve(object)
+                                                        }).catch((err) => {
+                                                            resolve(object)
+                                                        })
                                                     });
                                                 } else {
-                                                    resolve(object)
+                                                    tempcpus().then((a) => {
+                                                        object.cputemp = a
+                                                        resolve(object)
+                                                    }).catch((err) => {
+                                                        resolve(object)
+                                                    })
                                                 }
                                             }).catch((err) => {
-                                                resolve(object)
+                                                tempcpus().then((a) => {
+                                                    object.cputemp = a
+                                                    resolve(object)
+                                                }).catch((err) => {
+                                                    resolve(object)
+                                                })
                                             })
                                         })
                                     } else {
@@ -237,15 +320,35 @@ export default function sysinfo() {
                                             if (a) {
                                                 las().then(function (data) {
                                                     object.audio.inputs = data
-                                                    resolve(object)
+                                                    tempcpus().then((a) => {
+                                                        object.cputemp = a
+                                                        resolve(object)
+                                                    }).catch((err) => {
+                                                        resolve(object)
+                                                    })
                                                 }).catch(function (err) {
-                                                    resolve(object)
+                                                    tempcpus().then((a) => {
+                                                        object.cputemp = a
+                                                        resolve(object)
+                                                    }).catch((err) => {
+                                                        resolve(object)
+                                                    })
                                                 });
                                             } else {
-                                                resolve(object)
+                                                tempcpus().then((a) => {
+                                                    object.cputemp = a
+                                                    resolve(object)
+                                                }).catch((err) => {
+                                                    resolve(object)
+                                                })
                                             }
                                         }).catch((err) => {
-                                            resolve(object)
+                                            tempcpus().then((a) => {
+                                                object.cputemp = a
+                                                resolve(object)
+                                            }).catch((err) => {
+                                                resolve(object)
+                                            })
                                         })
                                     }
                                 }).catch((err) => {
@@ -253,15 +356,35 @@ export default function sysinfo() {
                                         if (a) {
                                             las().then(function (data) {
                                                 object.audio.inputs = data
-                                                resolve(object)
+                                                tempcpus().then((a) => {
+                                                    object.cputemp = a
+                                                    resolve(object)
+                                                }).catch((err) => {
+                                                    resolve(object)
+                                                })
                                             }).catch(function (err) {
-                                                resolve(object)
+                                                tempcpus().then((a) => {
+                                                    object.cputemp = a
+                                                    resolve(object)
+                                                }).catch((err) => {
+                                                    resolve(object)
+                                                })
                                             });
                                         } else {
-                                            resolve(object)
+                                            tempcpus().then((a) => {
+                                                object.cputemp = a
+                                                resolve(object)
+                                            }).catch((err) => {
+                                                resolve(object)
+                                            })
                                         }
                                     }).catch((err) => {
-                                        resolve(object)
+                                        tempcpus().then((a) => {
+                                            object.cputemp = a
+                                            resolve(object)
+                                        }).catch((err) => {
+                                            resolve(object)
+                                        })
                                     })
                                 })
                             });

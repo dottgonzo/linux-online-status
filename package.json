@@ -1,6 +1,6 @@
 {
   "name": "linux-online-status",
-  "version": "0.0.14",
+  "version": "0.1.14",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -22,6 +22,7 @@
     "bluebird": "^3.2.1",
     "debcheck": "0.0.3",
     "linux-audio-state": "0.0.13",
+    "linux-cpu-temp": "0.0.1",
     "linux-video-state": "0.0.13",
     "ls-disks": "^1.3.1",
     "lsusbdev": "^1.0.1",
