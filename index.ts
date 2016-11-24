@@ -1,6 +1,10 @@
-
+import * as os from "os";
 import * as child_process from "child_process";
+
 import * as Promise from "bluebird";
+
+import * as superagent from "superagent";
+
 
 import las from "linux-audio-state";
 import lsusb from "lsusbdev";
@@ -16,9 +20,6 @@ import debCheck from "debcheck"
 import * as lsdisks from "ls-disks";
 
 const exec = child_process.exec;
-
-
-
 
 interface Icores {
 
@@ -38,8 +39,6 @@ interface Itemp {
     cores: Icores[];
 
 }
-
-
 
 interface AudioChannelAnswer {
     dev: string;
@@ -106,9 +105,6 @@ interface LsusbdevAnswer {
     id: string;
 }
 
-
-
-
 interface IPartition {
     partition: string;
     sectors: number;
@@ -150,17 +146,35 @@ interface Answer {
     audio: {
         inputs: AudioAnswer[];
     };
-    cputemp: Itemp
+    cputemp: Itemp;
+    system: {
+        loadavg: number[];
+        freemem: number;
+        totalmem: number;
+        release: string;
+        arch: string;
+        ostype: string;
+        platform: string;
+        cores: number;
+    }
+    externalIp: string;
 }
 
+function getExternalIp(): Promise<string> {
+    return new Promise<string>(function(resolve, reject) {
 
-
-
-
-
+        superagent.get('https://api.ipify.org?format=json').end(function(err, res) {
+            if (err) {
+                reject(err)
+            } else {
+                resolve(res.body.ip)
+            }
+        })
+    })
+}
 
 export default function sysinfo() {
-    return new Promise<Answer>(function (resolve, reject) {
+    return new Promise<Answer>(function(resolve, reject) {
 
 
         let object = <Answer>{};
@@ -168,15 +182,24 @@ export default function sysinfo() {
         object.audio = <{ inputs: AudioAnswer[] }>{ inputs: [] };
         object.video = <{ inputs: VideoAnswer[] }>{ inputs: [] };
         let callbacked = false;
-        let timo = setTimeout(function () {
+        let timo = setTimeout(function() {
             if (!callbacked) {
                 console.log("timeout bootId read timeout");
                 reject("timeout");
             }
         }, 10000);
-
-
-        exec("cat /proc/sys/kernel/random/boot_id", { timeout: 9000 }, function (error, stdout, stderr) {
+        object.system = {
+            loadavg: os.loadavg(),
+            freemem: os.freemem(),
+            totalmem: os.totalmem(),
+            release: os.release(),
+            arch: os.arch(),
+            ostype: os.type(),
+            platform: os.platform(),
+            cores: os.loadavg().length
+        };
+        object.externalIp = ''
+        exec("cat /proc/sys/kernel/random/boot_id", { timeout: 9000 }, function(error, stdout, stderr) {
             if (error != null) {
                 callbacked = true;
                 clearTimeout(timo);
@@ -190,17 +213,16 @@ export default function sysinfo() {
                 clearTimeout(timo);
 
                 let callbacked2 = false;
-                let timo2 = setTimeout(function () {
+                let timo2 = setTimeout(function() {
                     if (!callbacked2) {
                         console.log("timeout bootTime read timeout");
                         reject("timeout");
                     }
                 }, 10000);
 
-
                 object.bootId = stdout.toString().replace("\n", "");
 
-                exec("cat /proc/stat | grep btime | awk '{ print $2 }'", { timeout: 9000 }, function (error, stdout, stderr) {
+                exec("cat /proc/stat | grep btime | awk '{ print $2 }'", { timeout: 9000 }, function(error, stdout, stderr) {
                     if (error != null) {
                         callbacked2 = true;
                         clearTimeout(timo2);
@@ -215,175 +237,500 @@ export default function sysinfo() {
 
                         object.bootTime = parseInt(stdout.toString()) * 1000;
 
-
-                        lsusb().then(function (data) {
+                        lsusb().then(function(data) {
                             object.usbDevices = data;
                             object.drives = lsdisks.all();
-                            networkstatus().then(function (data: INetStatus) {
+                            networkstatus().then(function(data: INetStatus) {
                                 object.networks = data.networks;
                                 object.network = data.network;
                                 debCheck('v4l-conf').then((a) => {
                                     if (a) {
                                         debCheck('v4l-utils').then((a) => {
                                             if (a) {
-                                                lvs().then(function (data) {
+                                                lvs().then(function(data) {
                                                     object.video.inputs = data;
                                                     tempcpus().then((a) => {
                                                         object.cputemp = a
-                                                        resolve(object)
+                                                        if (object.network) {
+                                                            getExternalIp().then((a) => {
+                                                                object.externalIp = a
+                                                                resolve(object)
+                                                            }).catch(() => {
+                                                                resolve(object)
+                                                            })
+                                                        } else {
+                                                            resolve(object)
+                                                        }
                                                     }).catch((err) => {
-                                                        resolve(object)
+                                                        if (object.network) {
+                                                            getExternalIp().then((a) => {
+                                                                object.externalIp = a
+                                                                resolve(object)
+                                                            }).catch(() => {
+                                                                resolve(object)
+                                                            })
+                                                        } else {
+                                                            resolve(object)
+                                                        }
                                                     })
-                                                }).catch(function (err) {
+                                                }).catch(function(err) {
                                                     console.log(err);
                                                     tempcpus().then((a) => {
                                                         object.cputemp = a
-                                                        resolve(object)
+                                                        if (object.network) {
+                                                            getExternalIp().then((a) => {
+                                                                object.externalIp = a
+                                                                resolve(object)
+                                                            }).catch(() => {
+                                                                resolve(object)
+                                                            })
+                                                        } else {
+                                                            resolve(object)
+                                                        }
                                                     }).catch((err) => {
-                                                        resolve(object)
+                                                        if (object.network) {
+                                                            getExternalIp().then((a) => {
+                                                                object.externalIp = a
+                                                                resolve(object)
+                                                            }).catch(() => {
+                                                                resolve(object)
+                                                            })
+                                                        } else {
+                                                            resolve(object)
+                                                        }
                                                     })
                                                 });
                                             } else {
                                                 debCheck('pulseaudio-utils').then((a) => {
                                                     if (a) {
-                                                        las().then(function (data) {
+                                                        las().then(function(data) {
                                                             object.audio.inputs = data
                                                             tempcpus().then((a) => {
                                                                 object.cputemp = a
-                                                                resolve(object)
+
+                                                                if (object.network) {
+                                                                    getExternalIp().then((a) => {
+                                                                        object.externalIp = a
+                                                                        resolve(object)
+                                                                    }).catch(() => {
+                                                                        resolve(object)
+                                                                    })
+                                                                } else {
+                                                                    resolve(object)
+                                                                }
                                                             }).catch((err) => {
-                                                                resolve(object)
+                                                                if (object.network) {
+                                                                    getExternalIp().then((a) => {
+                                                                        object.externalIp = a
+                                                                        resolve(object)
+                                                                    }).catch(() => {
+                                                                        resolve(object)
+                                                                    })
+                                                                } else {
+                                                                    resolve(object)
+                                                                }
                                                             })
-                                                        }).catch(function (err) {
+                                                        }).catch(function(err) {
                                                             tempcpus().then((a) => {
                                                                 object.cputemp = a
-                                                                resolve(object)
+                                                                if (object.network) {
+                                                                    getExternalIp().then((a) => {
+                                                                        object.externalIp = a
+                                                                        resolve(object)
+                                                                    }).catch(() => {
+                                                                        resolve(object)
+                                                                    })
+                                                                } else {
+                                                                    resolve(object)
+                                                                }
                                                             }).catch((err) => {
-                                                                resolve(object)
+                                                                if (object.network) {
+                                                                    getExternalIp().then((a) => {
+                                                                        object.externalIp = a
+                                                                        resolve(object)
+                                                                    }).catch(() => {
+                                                                        resolve(object)
+                                                                    })
+                                                                } else {
+                                                                    resolve(object)
+                                                                }
                                                             })
                                                         });
                                                     } else {
                                                         tempcpus().then((a) => {
                                                             object.cputemp = a
-                                                            resolve(object)
+                                                            if (object.network) {
+                                                                getExternalIp().then((a) => {
+                                                                    object.externalIp = a
+                                                                    resolve(object)
+                                                                }).catch(() => {
+                                                                    resolve(object)
+                                                                })
+                                                            } else {
+                                                                resolve(object)
+                                                            }
                                                         }).catch((err) => {
-                                                            resolve(object)
+                                                            if (object.network) {
+                                                                getExternalIp().then((a) => {
+                                                                    object.externalIp = a
+                                                                    resolve(object)
+                                                                }).catch(() => {
+                                                                    resolve(object)
+                                                                })
+                                                            } else {
+                                                                resolve(object)
+                                                            }
                                                         })
                                                     }
                                                 }).catch((err) => {
                                                     tempcpus().then((a) => {
                                                         object.cputemp = a
-                                                        resolve(object)
+                                                        if (object.network) {
+                                                            getExternalIp().then((a) => {
+                                                                object.externalIp = a
+                                                                resolve(object)
+                                                            }).catch(() => {
+                                                                resolve(object)
+                                                            })
+                                                        } else {
+                                                            resolve(object)
+                                                        }
                                                     }).catch((err) => {
-                                                        resolve(object)
+                                                        if (object.network) {
+                                                            getExternalIp().then((a) => {
+                                                                object.externalIp = a
+                                                                resolve(object)
+                                                            }).catch(() => {
+                                                                resolve(object)
+                                                            })
+                                                        } else {
+                                                            resolve(object)
+                                                        }
                                                     })
                                                 })
                                             }
                                         }).catch((err) => {
                                             debCheck('pulseaudio-utils').then((a) => {
                                                 if (a) {
-                                                    las().then(function (data) {
+                                                    las().then(function(data) {
                                                         object.audio.inputs = data
                                                         tempcpus().then((a) => {
                                                             object.cputemp = a
-                                                            resolve(object)
+                                                            if (object.network) {
+                                                                getExternalIp().then((a) => {
+                                                                    object.externalIp = a
+                                                                    resolve(object)
+                                                                }).catch(() => {
+                                                                    resolve(object)
+                                                                })
+                                                            } else {
+                                                                resolve(object)
+                                                            }
                                                         }).catch((err) => {
-                                                            resolve(object)
+                                                            if (object.network) {
+                                                                getExternalIp().then((a) => {
+                                                                    object.externalIp = a
+                                                                    resolve(object)
+                                                                }).catch(() => {
+                                                                    resolve(object)
+                                                                })
+                                                            } else {
+                                                                resolve(object)
+                                                            }
                                                         })
-                                                    }).catch(function (err) {
+                                                    }).catch(function(err) {
                                                         tempcpus().then((a) => {
                                                             object.cputemp = a
-                                                            resolve(object)
+                                                            if (object.network) {
+                                                                getExternalIp().then((a) => {
+                                                                    object.externalIp = a
+                                                                    resolve(object)
+                                                                }).catch(() => {
+                                                                    resolve(object)
+                                                                })
+                                                            } else {
+                                                                resolve(object)
+                                                            }
                                                         }).catch((err) => {
-                                                            resolve(object)
+                                                            if (object.network) {
+                                                                getExternalIp().then((a) => {
+                                                                    object.externalIp = a
+                                                                    resolve(object)
+                                                                }).catch(() => {
+                                                                    resolve(object)
+                                                                })
+                                                            } else {
+                                                                resolve(object)
+                                                            }
                                                         })
                                                     });
                                                 } else {
                                                     tempcpus().then((a) => {
                                                         object.cputemp = a
-                                                        resolve(object)
+                                                        if (object.network) {
+                                                            getExternalIp().then((a) => {
+                                                                object.externalIp = a
+                                                                resolve(object)
+                                                            }).catch(() => {
+                                                                resolve(object)
+                                                            })
+                                                        } else {
+                                                            resolve(object)
+                                                        }
                                                     }).catch((err) => {
-                                                        resolve(object)
+                                                        if (object.network) {
+                                                            getExternalIp().then((a) => {
+                                                                object.externalIp = a
+                                                                resolve(object)
+                                                            }).catch(() => {
+                                                                resolve(object)
+                                                            })
+                                                        } else {
+                                                            resolve(object)
+                                                        }
                                                     })
                                                 }
                                             }).catch((err) => {
                                                 tempcpus().then((a) => {
                                                     object.cputemp = a
-                                                    resolve(object)
+                                                    if (object.network) {
+                                                        getExternalIp().then((a) => {
+                                                            object.externalIp = a
+                                                            resolve(object)
+                                                        }).catch(() => {
+                                                            resolve(object)
+                                                        })
+                                                    } else {
+                                                        resolve(object)
+                                                    }
                                                 }).catch((err) => {
-                                                    resolve(object)
+                                                    if (object.network) {
+                                                        getExternalIp().then((a) => {
+                                                            object.externalIp = a
+                                                            resolve(object)
+                                                        }).catch(() => {
+                                                            resolve(object)
+                                                        })
+                                                    } else {
+                                                        resolve(object)
+                                                    }
                                                 })
                                             })
                                         })
                                     } else {
                                         debCheck('pulseaudio-utils').then((a) => {
                                             if (a) {
-                                                las().then(function (data) {
+                                                las().then(function(data) {
                                                     object.audio.inputs = data
                                                     tempcpus().then((a) => {
                                                         object.cputemp = a
-                                                        resolve(object)
+
+                                                        if (object.network) {
+                                                            getExternalIp().then((a) => {
+                                                                object.externalIp = a
+                                                                resolve(object)
+                                                            }).catch(() => {
+                                                                resolve(object)
+                                                            })
+                                                        } else {
+                                                            resolve(object)
+                                                        }
                                                     }).catch((err) => {
-                                                        resolve(object)
+                                                        if (object.network) {
+                                                            getExternalIp().then((a) => {
+                                                                object.externalIp = a
+                                                                resolve(object)
+                                                            }).catch(() => {
+                                                                resolve(object)
+                                                            })
+                                                        } else {
+                                                            resolve(object)
+                                                        }
                                                     })
-                                                }).catch(function (err) {
+                                                }).catch(function(err) {
                                                     tempcpus().then((a) => {
                                                         object.cputemp = a
-                                                        resolve(object)
+                                                        if (object.network) {
+                                                            getExternalIp().then((a) => {
+                                                                object.externalIp = a
+                                                                resolve(object)
+                                                            }).catch(() => {
+                                                                resolve(object)
+                                                            })
+                                                        } else {
+                                                            resolve(object)
+                                                        }
                                                     }).catch((err) => {
-                                                        resolve(object)
+                                                        if (object.network) {
+                                                            getExternalIp().then((a) => {
+                                                                object.externalIp = a
+                                                                resolve(object)
+                                                            }).catch(() => {
+                                                                resolve(object)
+                                                            })
+                                                        } else {
+                                                            resolve(object)
+                                                        }
                                                     })
                                                 });
                                             } else {
                                                 tempcpus().then((a) => {
                                                     object.cputemp = a
-                                                    resolve(object)
+                                                    if (object.network) {
+                                                        getExternalIp().then((a) => {
+                                                            object.externalIp = a
+                                                            resolve(object)
+                                                        }).catch(() => {
+                                                            resolve(object)
+                                                        })
+                                                    } else {
+                                                        resolve(object)
+                                                    }
                                                 }).catch((err) => {
-                                                    resolve(object)
+                                                    if (object.network) {
+                                                        getExternalIp().then((a) => {
+                                                            object.externalIp = a
+                                                            resolve(object)
+                                                        }).catch(() => {
+                                                            resolve(object)
+                                                        })
+                                                    } else {
+                                                        resolve(object)
+                                                    }
                                                 })
                                             }
                                         }).catch((err) => {
                                             tempcpus().then((a) => {
                                                 object.cputemp = a
-                                                resolve(object)
+                                                if (object.network) {
+                                                    getExternalIp().then((a) => {
+                                                        object.externalIp = a
+                                                        resolve(object)
+                                                    }).catch(() => {
+                                                        resolve(object)
+                                                    })
+                                                } else {
+                                                    resolve(object)
+                                                }
                                             }).catch((err) => {
-                                                resolve(object)
+                                                if (object.network) {
+                                                    getExternalIp().then((a) => {
+                                                        object.externalIp = a
+                                                        resolve(object)
+                                                    }).catch(() => {
+                                                        resolve(object)
+                                                    })
+                                                } else {
+                                                    resolve(object)
+                                                }
                                             })
                                         })
                                     }
                                 }).catch((err) => {
                                     debCheck('pulseaudio-utils').then((a) => {
                                         if (a) {
-                                            las().then(function (data) {
+                                            las().then(function(data) {
                                                 object.audio.inputs = data
                                                 tempcpus().then((a) => {
                                                     object.cputemp = a
-                                                    resolve(object)
+                                                    if (object.network) {
+                                                        getExternalIp().then((a) => {
+                                                            object.externalIp = a
+                                                            resolve(object)
+                                                        }).catch(() => {
+                                                            resolve(object)
+                                                        })
+                                                    } else {
+                                                        resolve(object)
+                                                    }
                                                 }).catch((err) => {
-                                                    resolve(object)
+                                                    if (object.network) {
+                                                        getExternalIp().then((a) => {
+                                                            object.externalIp = a
+                                                            resolve(object)
+                                                        }).catch(() => {
+                                                            resolve(object)
+                                                        })
+                                                    } else {
+                                                        resolve(object)
+                                                    }
                                                 })
-                                            }).catch(function (err) {
+                                            }).catch(function(err) {
                                                 tempcpus().then((a) => {
                                                     object.cputemp = a
-                                                    resolve(object)
+                                                    if (object.network) {
+                                                        getExternalIp().then((a) => {
+                                                            object.externalIp = a
+                                                            resolve(object)
+                                                        }).catch(() => {
+                                                            resolve(object)
+                                                        })
+                                                    } else {
+                                                        resolve(object)
+                                                    }
                                                 }).catch((err) => {
-                                                    resolve(object)
+                                                    if (object.network) {
+                                                        getExternalIp().then((a) => {
+                                                            object.externalIp = a
+                                                            resolve(object)
+                                                        }).catch(() => {
+                                                            resolve(object)
+                                                        })
+                                                    } else {
+                                                        resolve(object)
+                                                    }
                                                 })
                                             });
                                         } else {
                                             tempcpus().then((a) => {
                                                 object.cputemp = a
-                                                resolve(object)
+                                                if (object.network) {
+                                                    getExternalIp().then((a) => {
+                                                        object.externalIp = a
+                                                        resolve(object)
+                                                    }).catch(() => {
+                                                        resolve(object)
+                                                    })
+                                                } else {
+                                                    resolve(object)
+                                                }
                                             }).catch((err) => {
-                                                resolve(object)
+                                                if (object.network) {
+                                                    getExternalIp().then((a) => {
+                                                        object.externalIp = a
+                                                        resolve(object)
+                                                    }).catch(() => {
+                                                        resolve(object)
+                                                    })
+                                                } else {
+                                                    resolve(object)
+                                                }
                                             })
                                         }
                                     }).catch((err) => {
                                         tempcpus().then((a) => {
                                             object.cputemp = a
-                                            resolve(object)
+                                            if (object.network) {
+                                                getExternalIp().then((a) => {
+                                                    object.externalIp = a
+                                                    resolve(object)
+                                                }).catch(() => {
+                                                    resolve(object)
+                                                })
+                                            } else {
+                                                resolve(object)
+                                            }
                                         }).catch((err) => {
-                                            resolve(object)
+                                            if (object.network) {
+                                                getExternalIp().then((a) => {
+                                                    object.externalIp = a
+                                                    resolve(object)
+                                                }).catch(() => {
+                                                    resolve(object)
+                                                })
+                                            } else {
+                                                resolve(object)
+                                            }
                                         })
                                     })
                                 })
