@@ -86,6 +86,7 @@ interface INetwork {
     scan?: IScan[];
     ip?: string;
     gateway?: string;
+    externalIp?: string;
 }
 
 
@@ -157,13 +158,12 @@ interface Answer {
         platform: string;
         cores: number;
     }
-    externalIp: string;
 }
 
 function getExternalIp(): Promise<string> {
-    return new Promise<string>(function(resolve, reject) {
+    return new Promise<string>(function (resolve, reject) {
 
-        superagent.get('https://api.ipify.org?format=json').end(function(err, res) {
+        superagent.get('https://api.ipify.org?format=json').end(function (err, res) {
             if (err) {
                 reject(err)
             } else {
@@ -174,7 +174,7 @@ function getExternalIp(): Promise<string> {
 }
 
 export default function sysinfo() {
-    return new Promise<Answer>(function(resolve, reject) {
+    return new Promise<Answer>(function (resolve, reject) {
 
 
         let object = <Answer>{};
@@ -182,7 +182,7 @@ export default function sysinfo() {
         object.audio = <{ inputs: AudioAnswer[] }>{ inputs: [] };
         object.video = <{ inputs: VideoAnswer[] }>{ inputs: [] };
         let callbacked = false;
-        let timo = setTimeout(function() {
+        let timo = setTimeout(function () {
             if (!callbacked) {
                 console.log("timeout bootId read timeout");
                 reject("timeout");
@@ -198,8 +198,7 @@ export default function sysinfo() {
             platform: os.platform(),
             cores: os.loadavg().length
         };
-        object.externalIp = ''
-        exec("cat /proc/sys/kernel/random/boot_id", { timeout: 9000 }, function(error, stdout, stderr) {
+        exec("cat /proc/sys/kernel/random/boot_id", { timeout: 9000 }, function (error, stdout, stderr) {
             if (error != null) {
                 callbacked = true;
                 clearTimeout(timo);
@@ -213,7 +212,7 @@ export default function sysinfo() {
                 clearTimeout(timo);
 
                 let callbacked2 = false;
-                let timo2 = setTimeout(function() {
+                let timo2 = setTimeout(function () {
                     if (!callbacked2) {
                         console.log("timeout bootTime read timeout");
                         reject("timeout");
@@ -222,7 +221,7 @@ export default function sysinfo() {
 
                 object.bootId = stdout.toString().replace("\n", "");
 
-                exec("cat /proc/stat | grep btime | awk '{ print $2 }'", { timeout: 9000 }, function(error, stdout, stderr) {
+                exec("cat /proc/stat | grep btime | awk '{ print $2 }'", { timeout: 9000 }, function (error, stdout, stderr) {
                     if (error != null) {
                         callbacked2 = true;
                         clearTimeout(timo2);
@@ -237,23 +236,26 @@ export default function sysinfo() {
 
                         object.bootTime = parseInt(stdout.toString()) * 1000;
 
-                        lsusb().then(function(data) {
+                        lsusb().then(function (data) {
                             object.usbDevices = data;
                             object.drives = lsdisks.all();
-                            networkstatus().then(function(data: INetStatus) {
+                            networkstatus().then(function (data: INetStatus) {
                                 object.networks = data.networks;
                                 object.network = data.network;
+                                if (object.network) {
+                                    object.network.externalIp = ''
+                                }
                                 debCheck('v4l-conf').then((a) => {
                                     if (a) {
                                         debCheck('v4l-utils').then((a) => {
                                             if (a) {
-                                                lvs().then(function(data) {
+                                                lvs().then(function (data) {
                                                     object.video.inputs = data;
                                                     tempcpus().then((a) => {
                                                         object.cputemp = a
                                                         if (object.network) {
                                                             getExternalIp().then((a) => {
-                                                                object.externalIp = a
+                                                                object.network.externalIp = a
                                                                 resolve(object)
                                                             }).catch(() => {
                                                                 resolve(object)
@@ -264,7 +266,7 @@ export default function sysinfo() {
                                                     }).catch((err) => {
                                                         if (object.network) {
                                                             getExternalIp().then((a) => {
-                                                                object.externalIp = a
+                                                                object.network.externalIp = a
                                                                 resolve(object)
                                                             }).catch(() => {
                                                                 resolve(object)
@@ -273,13 +275,13 @@ export default function sysinfo() {
                                                             resolve(object)
                                                         }
                                                     })
-                                                }).catch(function(err) {
+                                                }).catch(function (err) {
                                                     console.log(err);
                                                     tempcpus().then((a) => {
                                                         object.cputemp = a
                                                         if (object.network) {
                                                             getExternalIp().then((a) => {
-                                                                object.externalIp = a
+                                                                object.network.externalIp = a
                                                                 resolve(object)
                                                             }).catch(() => {
                                                                 resolve(object)
@@ -290,7 +292,7 @@ export default function sysinfo() {
                                                     }).catch((err) => {
                                                         if (object.network) {
                                                             getExternalIp().then((a) => {
-                                                                object.externalIp = a
+                                                                object.network.externalIp = a
                                                                 resolve(object)
                                                             }).catch(() => {
                                                                 resolve(object)
@@ -303,14 +305,14 @@ export default function sysinfo() {
                                             } else {
                                                 debCheck('pulseaudio-utils').then((a) => {
                                                     if (a) {
-                                                        las().then(function(data) {
+                                                        las().then(function (data) {
                                                             object.audio.inputs = data
                                                             tempcpus().then((a) => {
                                                                 object.cputemp = a
 
                                                                 if (object.network) {
                                                                     getExternalIp().then((a) => {
-                                                                        object.externalIp = a
+                                                                        object.network.externalIp = a
                                                                         resolve(object)
                                                                     }).catch(() => {
                                                                         resolve(object)
@@ -321,7 +323,7 @@ export default function sysinfo() {
                                                             }).catch((err) => {
                                                                 if (object.network) {
                                                                     getExternalIp().then((a) => {
-                                                                        object.externalIp = a
+                                                                        object.network.externalIp = a
                                                                         resolve(object)
                                                                     }).catch(() => {
                                                                         resolve(object)
@@ -330,12 +332,12 @@ export default function sysinfo() {
                                                                     resolve(object)
                                                                 }
                                                             })
-                                                        }).catch(function(err) {
+                                                        }).catch(function (err) {
                                                             tempcpus().then((a) => {
                                                                 object.cputemp = a
                                                                 if (object.network) {
                                                                     getExternalIp().then((a) => {
-                                                                        object.externalIp = a
+                                                                        object.network.externalIp = a
                                                                         resolve(object)
                                                                     }).catch(() => {
                                                                         resolve(object)
@@ -346,7 +348,7 @@ export default function sysinfo() {
                                                             }).catch((err) => {
                                                                 if (object.network) {
                                                                     getExternalIp().then((a) => {
-                                                                        object.externalIp = a
+                                                                        object.network.externalIp = a
                                                                         resolve(object)
                                                                     }).catch(() => {
                                                                         resolve(object)
@@ -361,7 +363,7 @@ export default function sysinfo() {
                                                             object.cputemp = a
                                                             if (object.network) {
                                                                 getExternalIp().then((a) => {
-                                                                    object.externalIp = a
+                                                                    object.network.externalIp = a
                                                                     resolve(object)
                                                                 }).catch(() => {
                                                                     resolve(object)
@@ -372,7 +374,7 @@ export default function sysinfo() {
                                                         }).catch((err) => {
                                                             if (object.network) {
                                                                 getExternalIp().then((a) => {
-                                                                    object.externalIp = a
+                                                                    object.network.externalIp = a
                                                                     resolve(object)
                                                                 }).catch(() => {
                                                                     resolve(object)
@@ -387,7 +389,7 @@ export default function sysinfo() {
                                                         object.cputemp = a
                                                         if (object.network) {
                                                             getExternalIp().then((a) => {
-                                                                object.externalIp = a
+                                                                object.network.externalIp = a
                                                                 resolve(object)
                                                             }).catch(() => {
                                                                 resolve(object)
@@ -398,7 +400,7 @@ export default function sysinfo() {
                                                     }).catch((err) => {
                                                         if (object.network) {
                                                             getExternalIp().then((a) => {
-                                                                object.externalIp = a
+                                                                object.network.externalIp = a
                                                                 resolve(object)
                                                             }).catch(() => {
                                                                 resolve(object)
@@ -412,13 +414,13 @@ export default function sysinfo() {
                                         }).catch((err) => {
                                             debCheck('pulseaudio-utils').then((a) => {
                                                 if (a) {
-                                                    las().then(function(data) {
+                                                    las().then(function (data) {
                                                         object.audio.inputs = data
                                                         tempcpus().then((a) => {
                                                             object.cputemp = a
                                                             if (object.network) {
                                                                 getExternalIp().then((a) => {
-                                                                    object.externalIp = a
+                                                                    object.network.externalIp = a
                                                                     resolve(object)
                                                                 }).catch(() => {
                                                                     resolve(object)
@@ -429,7 +431,7 @@ export default function sysinfo() {
                                                         }).catch((err) => {
                                                             if (object.network) {
                                                                 getExternalIp().then((a) => {
-                                                                    object.externalIp = a
+                                                                    object.network.externalIp = a
                                                                     resolve(object)
                                                                 }).catch(() => {
                                                                     resolve(object)
@@ -438,12 +440,12 @@ export default function sysinfo() {
                                                                 resolve(object)
                                                             }
                                                         })
-                                                    }).catch(function(err) {
+                                                    }).catch(function (err) {
                                                         tempcpus().then((a) => {
                                                             object.cputemp = a
                                                             if (object.network) {
                                                                 getExternalIp().then((a) => {
-                                                                    object.externalIp = a
+                                                                    object.network.externalIp = a
                                                                     resolve(object)
                                                                 }).catch(() => {
                                                                     resolve(object)
@@ -454,7 +456,7 @@ export default function sysinfo() {
                                                         }).catch((err) => {
                                                             if (object.network) {
                                                                 getExternalIp().then((a) => {
-                                                                    object.externalIp = a
+                                                                    object.network.externalIp = a
                                                                     resolve(object)
                                                                 }).catch(() => {
                                                                     resolve(object)
@@ -469,7 +471,7 @@ export default function sysinfo() {
                                                         object.cputemp = a
                                                         if (object.network) {
                                                             getExternalIp().then((a) => {
-                                                                object.externalIp = a
+                                                                object.network.externalIp = a
                                                                 resolve(object)
                                                             }).catch(() => {
                                                                 resolve(object)
@@ -480,7 +482,7 @@ export default function sysinfo() {
                                                     }).catch((err) => {
                                                         if (object.network) {
                                                             getExternalIp().then((a) => {
-                                                                object.externalIp = a
+                                                                object.network.externalIp = a
                                                                 resolve(object)
                                                             }).catch(() => {
                                                                 resolve(object)
@@ -495,7 +497,7 @@ export default function sysinfo() {
                                                     object.cputemp = a
                                                     if (object.network) {
                                                         getExternalIp().then((a) => {
-                                                            object.externalIp = a
+                                                            object.network.externalIp = a
                                                             resolve(object)
                                                         }).catch(() => {
                                                             resolve(object)
@@ -506,7 +508,7 @@ export default function sysinfo() {
                                                 }).catch((err) => {
                                                     if (object.network) {
                                                         getExternalIp().then((a) => {
-                                                            object.externalIp = a
+                                                            object.network.externalIp = a
                                                             resolve(object)
                                                         }).catch(() => {
                                                             resolve(object)
@@ -520,14 +522,14 @@ export default function sysinfo() {
                                     } else {
                                         debCheck('pulseaudio-utils').then((a) => {
                                             if (a) {
-                                                las().then(function(data) {
+                                                las().then(function (data) {
                                                     object.audio.inputs = data
                                                     tempcpus().then((a) => {
                                                         object.cputemp = a
 
                                                         if (object.network) {
                                                             getExternalIp().then((a) => {
-                                                                object.externalIp = a
+                                                                object.network.externalIp = a
                                                                 resolve(object)
                                                             }).catch(() => {
                                                                 resolve(object)
@@ -538,7 +540,7 @@ export default function sysinfo() {
                                                     }).catch((err) => {
                                                         if (object.network) {
                                                             getExternalIp().then((a) => {
-                                                                object.externalIp = a
+                                                                object.network.externalIp = a
                                                                 resolve(object)
                                                             }).catch(() => {
                                                                 resolve(object)
@@ -547,12 +549,12 @@ export default function sysinfo() {
                                                             resolve(object)
                                                         }
                                                     })
-                                                }).catch(function(err) {
+                                                }).catch(function (err) {
                                                     tempcpus().then((a) => {
                                                         object.cputemp = a
                                                         if (object.network) {
                                                             getExternalIp().then((a) => {
-                                                                object.externalIp = a
+                                                                object.network.externalIp = a
                                                                 resolve(object)
                                                             }).catch(() => {
                                                                 resolve(object)
@@ -563,7 +565,7 @@ export default function sysinfo() {
                                                     }).catch((err) => {
                                                         if (object.network) {
                                                             getExternalIp().then((a) => {
-                                                                object.externalIp = a
+                                                                object.network.externalIp = a
                                                                 resolve(object)
                                                             }).catch(() => {
                                                                 resolve(object)
@@ -578,7 +580,7 @@ export default function sysinfo() {
                                                     object.cputemp = a
                                                     if (object.network) {
                                                         getExternalIp().then((a) => {
-                                                            object.externalIp = a
+                                                            object.network.externalIp = a
                                                             resolve(object)
                                                         }).catch(() => {
                                                             resolve(object)
@@ -589,7 +591,7 @@ export default function sysinfo() {
                                                 }).catch((err) => {
                                                     if (object.network) {
                                                         getExternalIp().then((a) => {
-                                                            object.externalIp = a
+                                                            object.network.externalIp = a
                                                             resolve(object)
                                                         }).catch(() => {
                                                             resolve(object)
@@ -604,7 +606,7 @@ export default function sysinfo() {
                                                 object.cputemp = a
                                                 if (object.network) {
                                                     getExternalIp().then((a) => {
-                                                        object.externalIp = a
+                                                        object.network.externalIp = a
                                                         resolve(object)
                                                     }).catch(() => {
                                                         resolve(object)
@@ -615,7 +617,7 @@ export default function sysinfo() {
                                             }).catch((err) => {
                                                 if (object.network) {
                                                     getExternalIp().then((a) => {
-                                                        object.externalIp = a
+                                                        object.network.externalIp = a
                                                         resolve(object)
                                                     }).catch(() => {
                                                         resolve(object)
@@ -629,13 +631,13 @@ export default function sysinfo() {
                                 }).catch((err) => {
                                     debCheck('pulseaudio-utils').then((a) => {
                                         if (a) {
-                                            las().then(function(data) {
+                                            las().then(function (data) {
                                                 object.audio.inputs = data
                                                 tempcpus().then((a) => {
                                                     object.cputemp = a
                                                     if (object.network) {
                                                         getExternalIp().then((a) => {
-                                                            object.externalIp = a
+                                                            object.network.externalIp = a
                                                             resolve(object)
                                                         }).catch(() => {
                                                             resolve(object)
@@ -646,7 +648,7 @@ export default function sysinfo() {
                                                 }).catch((err) => {
                                                     if (object.network) {
                                                         getExternalIp().then((a) => {
-                                                            object.externalIp = a
+                                                            object.network.externalIp = a
                                                             resolve(object)
                                                         }).catch(() => {
                                                             resolve(object)
@@ -655,12 +657,12 @@ export default function sysinfo() {
                                                         resolve(object)
                                                     }
                                                 })
-                                            }).catch(function(err) {
+                                            }).catch(function (err) {
                                                 tempcpus().then((a) => {
                                                     object.cputemp = a
                                                     if (object.network) {
                                                         getExternalIp().then((a) => {
-                                                            object.externalIp = a
+                                                            object.network.externalIp = a
                                                             resolve(object)
                                                         }).catch(() => {
                                                             resolve(object)
@@ -671,7 +673,7 @@ export default function sysinfo() {
                                                 }).catch((err) => {
                                                     if (object.network) {
                                                         getExternalIp().then((a) => {
-                                                            object.externalIp = a
+                                                            object.network.externalIp = a
                                                             resolve(object)
                                                         }).catch(() => {
                                                             resolve(object)
@@ -686,7 +688,7 @@ export default function sysinfo() {
                                                 object.cputemp = a
                                                 if (object.network) {
                                                     getExternalIp().then((a) => {
-                                                        object.externalIp = a
+                                                        object.network.externalIp = a
                                                         resolve(object)
                                                     }).catch(() => {
                                                         resolve(object)
@@ -697,7 +699,7 @@ export default function sysinfo() {
                                             }).catch((err) => {
                                                 if (object.network) {
                                                     getExternalIp().then((a) => {
-                                                        object.externalIp = a
+                                                        object.network.externalIp = a
                                                         resolve(object)
                                                     }).catch(() => {
                                                         resolve(object)
@@ -712,7 +714,7 @@ export default function sysinfo() {
                                             object.cputemp = a
                                             if (object.network) {
                                                 getExternalIp().then((a) => {
-                                                    object.externalIp = a
+                                                    object.network.externalIp = a
                                                     resolve(object)
                                                 }).catch(() => {
                                                     resolve(object)
@@ -723,7 +725,7 @@ export default function sysinfo() {
                                         }).catch((err) => {
                                             if (object.network) {
                                                 getExternalIp().then((a) => {
-                                                    object.externalIp = a
+                                                    object.network.externalIp = a
                                                     resolve(object)
                                                 }).catch(() => {
                                                     resolve(object)
