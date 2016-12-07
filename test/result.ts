@@ -2,14 +2,14 @@ import * as mocha from "mocha";
 import * as chai from "chai";
 let assert = chai.assert;
 import los from "../index";
-let verb = require("verbo");
+
 let json;
 
 before("get status info", function (done) {
     this.timeout(15000);
 
     los().then(function (data) {
-        verb(data, "info", "Status Info");
+        console.log(data, "info", "Status Info");
         json = data;
         done()
     }).catch(function (err) {
