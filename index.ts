@@ -100,7 +100,17 @@ interface IDisk {
     used_blocks: number;
 }
 
-
+interface ICpu {
+    model: string;
+    speed: number;
+    times: {
+        user: number;
+        nice: number;
+        sys: number;
+        idle: number;
+        irq: number
+    }
+}
 interface Answer {
     bootId: string;
     bootTime: number;
@@ -118,7 +128,7 @@ interface Answer {
         arch: string;
         ostype: string;
         platform: string;
-        cores: number;
+        cores: ICpu[];
     }
 }
 
@@ -157,7 +167,7 @@ export function sysinfo() {
             arch: os.arch(),
             ostype: os.type(),
             platform: os.platform(),
-            cores: os.loadavg().length
+            cores: os.cpus()
         };
         exec("cat /proc/sys/kernel/random/boot_id", { timeout: 9000 }, function (error, stdout, stderr) {
             if (error != null) {
